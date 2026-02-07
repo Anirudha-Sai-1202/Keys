@@ -1,6 +1,6 @@
 import express from "express";
 import { rolePermissions } from '../middleware/roleAuth.js';
-import { verifyToken } from '../middleware/verifyToken.js';
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 import { asyncHandler } from '../utils/errorHandler.js';
 import Key from '../models/key.model.js';
 import { NotFoundError, ValidationError, ConflictError } from '../utils/errorHandler.js';
@@ -13,7 +13,7 @@ import AuditService from '../services/auditService.js';
 const router = express.Router();
 
 // Apply token verification middleware to all routes
-router.use(verifyToken);
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 
 /**
  * Process a batch QR scan key return

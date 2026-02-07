@@ -11,7 +11,7 @@ import {
   cleanupNotifications,
   getNotificationById
 } from "../controllers/notification.controller.js";
-import { verifyToken } from "../middleware/verifyToken.js";
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 import { rolePermissions } from "../middleware/roleAuth.js";
 import { asyncHandler } from "../utils/errorHandler.js";
 import { createDailySummaryNotifications } from "../services/notificationService.js";
@@ -19,7 +19,7 @@ import { createDailySummaryNotifications } from "../services/notificationService
 const router = express.Router();
 
 // All notification routes require authentication
-router.use(verifyToken);
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 
 // GET routes - accessible to all authenticated users
 router.get("/", getMyNotifications); // Get user's notifications with optional filtering

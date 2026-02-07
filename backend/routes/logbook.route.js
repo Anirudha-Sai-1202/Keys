@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken } from '../middleware/verifyToken.js';
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 import { requireRole } from '../middleware/roleAuth.js';
 import {
   createLogbookEntry,
@@ -11,7 +11,7 @@ import {
 const router = express.Router();
 
 // Protected routes - require authentication
-router.use(verifyToken);
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 
 // Route to create a logbook entry - accessible by faculty and security
 router.post(

@@ -1,40 +1,21 @@
 import { create } from "zustand";
-import axios from "axios";
+
 import { handleError, handleSuccess } from "../utils/errorHandler.js";
 import { config } from "../utils/config.js";
 
-const API_URL = config.api.authUrl;
+const AUTH_SERVER_URL = import.meta.env.VITE_AUTH_SERVER_URL || "http://localhost:2999";
 
-// Configure axios defaults
-axios.defaults.withCredentials = true;
-
-// Add request interceptor to include auth token
-axios.interceptors.request.use(
-	(config) => {
-		const token = localStorage.getItem('auth-token');
-		if (token) {
-			config.headers.Authorization = `Bearer ${token}`;
+// Utility to fetch with credentials
+const fetchWithCreds = async (url, options = {}) => {
+	return fetch(url, {
+		...options,
+		credentials: "include",
+		headers: {
+			"Content-Type": "application/json",
+			...(options.headers || {})
 		}
-		return config;
-	},
-	(error) => {
-		return Promise.reject(error);
-	}
-);
-
-// Add response interceptor to handle token refresh
-axios.interceptors.response.use(
-	(response) => response,
-	async (error) => {
-		if (error.response?.status === 401) {
-			// Clear invalid token
-			localStorage.removeItem('auth-token');
-			delete axios.defaults.headers.common['Authorization'];
-		}
-		return Promise.reject(error);
-	}
-);
-
+	});
+};
 export const useAuthStore = create((set, get) => ({
 	user: null,
 	isAuthenticated: false,
@@ -85,25 +66,15 @@ export const useAuthStore = create((set, get) => ({
 	logout: async () => {
 		set({ isLoading: true, error: null });
 		try {
-			await axios.post(`${API_URL}/logout`);
-			
-			// Clear local storage
-			localStorage.removeItem('auth-token');
-			delete axios.defaults.headers.common['Authorization'];
-			
+			const res = await fetchWithCreds(`${AUTH_SERVER_URL}/logout`, { method: "POST" });
 			set({
 				user: null,
 				isAuthenticated: false,
 				error: null,
 				isLoading: false,
 			});
-			
 			handleSuccess("Logged out successfully");
 		} catch (error) {
-			// Even if logout fails on server, clear local state
-			localStorage.removeItem('auth-token');
-			delete axios.defaults.headers.common['Authorization'];
-			
 			set({
 				user: null,
 				isAuthenticated: false,
@@ -118,75 +89,36 @@ export const useAuthStore = create((set, get) => ({
 		console.log('🔄 Force resetting auth state...');
 		set({
 			_isCheckingAuthInProgress: false,
-			isCheckingAuth: false
+			isCheckingAuth: false,
 		});
 	},
 
 	checkAuth: async () => {
-		// Access flags but suppress unused warning (used for debugging logs and future guards)
-		// eslint-disable-next-line no-unused-vars
-		const { _isCheckingAuthInProgress, isCheckingAuth } = get();
-
-		// Prevent multiple simultaneous auth checks - TEMPORARILY DISABLED FOR DEBUGGING
-		// if (_isCheckingAuthInProgress || isCheckingAuth) {
-		//	console.log('🚫 Auth check already in progress, skipping...');
-		//	return;
-		// }
-
-		console.log('🔄 Starting auth check...');
-		set({ isCheckingAuth: true, error: null, _isCheckingAuthInProgress: true });
-
-		// Safety timeout to reset flag in case something goes wrong
-		const timeoutId = setTimeout(() => {
-			console.log('⏰ Auth check timeout, resetting flag...');
-			set({ _isCheckingAuthInProgress: false, isCheckingAuth: false });
-		}, 5000); // 5 second timeout
-
+		set({ isCheckingAuth: true, error: null });
 		try {
-			console.log('=== FRONTEND CHECK AUTH ===');
-			console.log('Making request to:', `${API_URL}/check-auth`);
-			console.log('Axios withCredentials:', axios.defaults.withCredentials);
-			console.log('Authorization header:', axios.defaults.headers.common['Authorization'] ? 'Set' : 'Not set');
-			console.log('LocalStorage token:', localStorage.getItem('auth-token') ? 'Present' : 'Missing');
-
-			// Ensure Authorization header is set if we have a token
-			const token = localStorage.getItem('auth-token');
-			if (token && !axios.defaults.headers.common['Authorization']) {
-				axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-				console.log('🔑 Authorization header set from localStorage');
+			const res = await fetchWithCreds(`${AUTH_SERVER_URL}/check-auth`, { method: "GET" });
+			const data = await res.json();
+			if (data.logged_in && data.user) {
+				set({
+					user: data.user,
+					isAuthenticated: true,
+					isCheckingAuth: false,
+					error: null
+				});
+			} else {
+				set({
+					user: null,
+					isAuthenticated: false,
+					isCheckingAuth: false,
+					error: null
+				});
 			}
-
-			const response = await axios.get(`${API_URL}/check-auth`);
-
-			console.log('Check auth successful:', response.data);
-			console.log('===========================');
-
-			clearTimeout(timeoutId);
-			set({
-				user: response.data.user,
-				isAuthenticated: true,
-				isCheckingAuth: false,
-				error: null,
-				_isCheckingAuthInProgress: false
-			});
 		} catch (error) {
-			console.log('=== CHECK AUTH FAILED ===');
-			console.log('Error:', error.response?.data || error.message);
-			console.log('Status:', error.response?.status);
-			console.log('=========================');
-
-			// Clear invalid token
-			localStorage.removeItem('auth-token');
-			delete axios.defaults.headers.common['Authorization'];
-
-			clearTimeout(timeoutId);
-			// Don't show error toast for auth check failures
 			set({
 				user: null,
 				isAuthenticated: false,
 				isCheckingAuth: false,
-				error: null,
-				_isCheckingAuthInProgress: false
+				error: null
 			});
 		}
 	},
@@ -197,25 +129,25 @@ export const useAuthStore = create((set, get) => ({
 	// Clear message
 	clearMessage: () => set({ message: null }),
 
-	// Update user profile
+	// Update user profile (example, update as needed for SSO)
 	updateProfile: async (profileData) => {
 		set({ isLoading: true, error: null });
-
 		try {
-			const response = await axios.put(`${API_URL}/update-profile`, profileData);
-
+			const res = await fetchWithCreds(`${AUTH_SERVER_URL}/update-profile`, {
+				method: "PUT",
+				body: JSON.stringify(profileData)
+			});
+			const data = await res.json();
 			set({
-				user: response.data.user,
+				user: data.user,
 				isLoading: false,
 				error: null
 			});
-
-			handleSuccess(response.data.message || "Profile updated successfully!");
-			return response.data;
+			handleSuccess(data.message || "Profile updated successfully!");
+			return data;
 		} catch (error) {
-			const errorMessage = handleError(error);
-			set({ error: errorMessage, isLoading: false });
+			set({ error: handleError(error), isLoading: false });
 			throw error;
 		}
 	},
-}));
+	}));

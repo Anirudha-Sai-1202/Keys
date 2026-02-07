@@ -20,13 +20,13 @@ import {
   manualAssignKey,
   // cleanupInactiveKeys,
 } from "../controllers/key.controller.js";
-import { verifyToken } from "../middleware/verifyToken.js";
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 import { rolePermissions } from "../middleware/roleAuth.js";
 
 const router = express.Router();
 
 // All key routes require authentication
-router.use(verifyToken);
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 
 // GET routes - accessible to all authenticated users
 router.get("/", getAllKeys); // Get all keys with optional filtering

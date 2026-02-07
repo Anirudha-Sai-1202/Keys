@@ -4,11 +4,9 @@ import "./config/env.js";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import session from "express-session";
 import path from "path";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import passport from "./config/passport.js";
 
 import { connectDB } from "./db/connectDB.js";
 import { verifyTransporter } from "./nodemailer/nodemailer.config.js";
@@ -21,7 +19,6 @@ import {
 	requestLogger
 } from "./middleware/security.js";
 
-import authRoutes from "./routes/auth.route.js";
 import dashboardRoutes from "./routes/dashboard.route.js";
 import keyRoutes from "./routes/key.route.js";
 import apiKeyRoutes from "./routes/apiKey.route.js";
@@ -71,20 +68,6 @@ app.use(express.json({ limit: '10mb' })); // Limit request size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Session middleware for Passport (only needed for OAuth flow)
-app.use(session({
-	secret: process.env.JWT_SECRET || 'your-session-secret',
-	resave: false,
-	saveUninitialized: false,
-	cookie: {
-		secure: process.env.NODE_ENV === 'production',
-		maxAge: 24 * 60 * 60 * 1000 // 24 hours
-	}
-}));
-
-// Passport middleware
-app.use(passport.initialize());
-app.use(passport.session());
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -112,7 +95,6 @@ app.get("/", (req, res) => {
 		endpoints: {
 			about : "/api/about",
 			health: "/api/health",
-			auth: "/api/auth",
 			dashboard: "/api/dashboard",
 			keys: "/api/keys",
 			apiKeys: "/api/api-keys",
@@ -122,7 +104,6 @@ app.get("/", (req, res) => {
 	});
 });
 
-app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/keys", keyRoutes);
 app.use("/api/api-keys", apiKeyRoutes);
@@ -134,7 +115,6 @@ app.use("/api/qr", qrRoutes);
 
 // For local development - handle /be prefix routes to match Google OAuth redirect URIs
 if (process.env.NODE_ENV === 'development' || process.env.ENVIRONMENT === 'local') {
-	app.use("/be/api/auth", authRoutes);
 	app.use("/be/api/dashboard", dashboardRoutes);
 	app.use("/be/api/keys", keyRoutes);
 	app.use("/be/api/api-keys", apiKeyRoutes);

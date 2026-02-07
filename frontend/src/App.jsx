@@ -29,7 +29,8 @@ import ViewReportsPage from "./pages/admin/ViewReportsPage";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
 import { useKeyStore } from "./store/keyStore";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+// import { useAuthStore } from "./store/authStore";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
 import RouteObserver from "./components/RouteObserver";
 import { useNotificationStore } from "./store/notificationStore";
@@ -74,6 +75,60 @@ function App() {
 	const { isCheckingAuth, checkAuth, isAuthenticated } = useAuthStore();
 	const { initializeSocket: initializeKeySocket, disconnectSocket: disconnectKeySocket } = useKeyStore();
 	const { initializeSocket: initializeNotificationSocket, disconnectSocket: disconnectNotificationSocket } = useNotificationStore();
+	const googleInitRef = useRef(false);
+
+	// Google Identity Services initialization
+	useEffect(() => {
+		const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+		console.log("Initializing Google Identity Services with client ID:", clientId);
+		const authServerUrl = import.meta.env.VITE_AUTH_SERVER_URL;
+
+		if (!clientId || !authServerUrl) {
+			return;
+		}
+
+		const initializeGoogle = () => {
+			if (googleInitRef.current) return true;
+			if (!window.google?.accounts?.id) return false;
+
+			window.google.accounts.id.initialize({
+				client_id: clientId,
+				callback: async (response) => {
+					await fetch(`${authServerUrl}/auth/google`, {
+						method: "POST",
+						credentials: "include",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ token: response.credential })
+					});
+					checkAuth();
+				},
+				ux_mode: "popup",
+				auto_select: false
+			});
+			googleInitRef.current = true;
+			window.dispatchEvent(new Event("gis:ready"));
+			return true;
+		};
+
+		if (initializeGoogle()) return;
+
+		const existingScript = document.querySelector("script[src=\"https://accounts.google.com/gsi/client\"]");
+		const script = existingScript || document.createElement("script");
+		script.src = "https://accounts.google.com/gsi/client";
+		script.async = true;
+		script.defer = true;
+
+		const onLoad = () => initializeGoogle();
+		script.addEventListener("load", onLoad, { once: true });
+
+		if (!existingScript) {
+			document.head.appendChild(script);
+		}
+
+		return () => {
+			script.removeEventListener("load", onLoad);
+		};
+	}, []);
 
 	useEffect(() => {
 		checkAuth();
@@ -86,7 +141,7 @@ function App() {
 			// Initialize both sockets
 			initializeKeySocket();
 			initializeNotificationSocket();
-			
+            
 			// Fetch notifications immediately when authenticated
 			useNotificationStore.getState().fetchNotifications();
 		} else {

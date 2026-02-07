@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyToken } from "../middleware/verifyToken.js";
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 import { rolePermissions } from "../middleware/roleAuth.js";
 import { asyncHandler } from "../utils/errorHandler.js";
 import AuditService from "../services/auditService.js";
@@ -7,7 +7,7 @@ import AuditService from "../services/auditService.js";
 const router = express.Router();
 
 // All audit routes require authentication
-router.use(verifyToken);
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 
 /**
  * Get audit logs with optional filters

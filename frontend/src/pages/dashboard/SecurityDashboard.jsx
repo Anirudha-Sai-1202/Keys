@@ -191,7 +191,8 @@ const SecurityDashboard = () => {
 
           // Create proper API URLs using configured backend base URL
           const keyUrl = `${config.api.keysUrl}/${parsedData.keyId}`;
-          const userUrl = `${config.api.authUrl}/user/${parsedData.userId}`;
+          const authServerUrl = import.meta.env.VITE_AUTH_SERVER_URL;
+          const userUrl = `${authServerUrl}/user/${parsedData.userId}`;
 
           console.log('🔍 Key URL:', keyUrl);
           console.log('🔍 User URL:', userUrl);

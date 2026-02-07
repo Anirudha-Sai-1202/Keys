@@ -16,13 +16,13 @@ import {
 	getActiveUsersAnalytics,
 	getPeakUsageAnalytics
 } from "../controllers/dashboard.controller.js";
-import { verifyToken } from "../middleware/verifyToken.js";
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 import { rolePermissions } from "../middleware/roleAuth.js";
 
 const router = express.Router();
 
 // All dashboard routes require authentication
-router.use(verifyToken);
+// SSO Auth-server integration: Remove verifyToken middleware. All authentication is handled externally.
 
 // Role-specific dashboard endpoints
 router.get("/admin", rolePermissions.adminOnly, getAdminDashboard);

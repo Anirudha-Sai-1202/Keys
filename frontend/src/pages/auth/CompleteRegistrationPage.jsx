@@ -186,12 +186,8 @@ const CompleteRegistrationPage = () => {
 
     setIsLoading(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL_LOCAL
-        ? `${import.meta.env.VITE_API_URL_LOCAL}/auth`
-        : import.meta.env.MODE === "dev"
-        ? "http://localhost:6203/api/auth"
-        : "/api/auth";
-      const response = await fetch(`${API_URL}/complete-registration`, {
+      const authServerUrl = import.meta.env.VITE_AUTH_SERVER_URL;
+      const response = await fetch(`${authServerUrl}/complete-registration`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -217,25 +213,6 @@ const CompleteRegistrationPage = () => {
       setIsLoading(false);
     }
   }
-
-  // Development utility retained for reference; disable unused var linting via comment
-  /* eslint-disable no-unused-vars */
-  async function clearUsers() {
-    if (confirm('Are you sure you want to clear all users from the database? This cannot be undone.')) {
-      try {
-        const response = await fetch('/api/auth/clear-users', { method: 'DELETE' });
-        const data = await response.json();
-        if (data.success) {
-          toast.success(`Cleared ${data.deletedCount} users from database`);
-        } else {
-          toast.error('Failed to clear users');
-        }
-      } catch (error) {
-        toast.error('Error clearing users');
-      }
-    }
-  }
-  /* eslint-enable no-unused-vars */
 
   function renderDepartmentSelection() {
     // For security and admin users, show a welcome message instead
