@@ -46,23 +46,20 @@ router.post("/sso/google", async (req, res) => {
 			req.headers.origin || config.urls.client
 		);
 
-		// Set cookies from SSO server response if available
-		if (result.token && result.user) {
-			// The SSO server should set cookies, but we can also set them here for redundancy
-			const cookieOptions = {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === "production",
-				sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-				maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-			};
+		// Forward Set-Cookie headers from auth-server to browser
+		// Auth-server sets cookies with domain .vjstartup.com
+		if (result.headers && result.headers['set-cookie']) {
+			const cookies = result.headers['set-cookie'];
+			console.log('📤 Forwarding cookies from auth-server to browser');
 
-			res.cookie("userToken", result.token, cookieOptions);
+			// Set all cookies at once (passing array prevents overwriting)
+			res.setHeader('Set-Cookie', cookies);
 		}
 
 		res.json({
 			success: true,
-			token: result.token,
-			user: result.user
+			token: result.data.token,
+			user: result.data.user
 		});
 	} catch (error) {
 		console.error("SSO Google login error:", error);

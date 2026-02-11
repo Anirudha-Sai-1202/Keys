@@ -6,12 +6,12 @@ import NotificationBell from "../notifications/NotificationBell";
 import { useState, useEffect, useRef } from 'react';
 
 const Navbar = ({ sidebarOpen, setSidebarOpen }) => {
-  const { user, logout } = useAuthStore();
+  const { user, logoutWithSSO } = useAuthStore();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const handleLogout = () => {
-    logout();
+    logoutWithSSO();
   };
 
   useEffect(() => {

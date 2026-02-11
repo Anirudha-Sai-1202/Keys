@@ -104,27 +104,28 @@ export const checkHybridAuth = async () => {
 
 /**
  * Logout from SSO
- * Clears SSO cookies and local storage
+ * Calls auth-server directly which clears all cookies
  * @returns {Promise<{success: boolean}>}
  */
 export const logoutSSO = async () => {
-    const ssoServerUrl = config.sso.serverUrl;
-
-    if (!ssoServerUrl) {
-        console.warn('SSO server URL not configured 4');
-        return { success: false };
-    }
+    // Always call production auth-server for logout
+    const ssoServerUrl = 'https://authv2.vjstartup.com';
 
     try {
+        // Direct POST to auth-server logout endpoint
         const response = await axios.post(
             `${ssoServerUrl}/logout`,
             {},
             {
-                withCredentials: true
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                withCredentials: true // Important: send cookies to be cleared
             }
         );
 
-        return response.data;
+        console.log('✅ SSO logout successful');
+        return { success: true };
     } catch (error) {
         console.error('SSO logout error:', error);
         // Even if server logout fails, consider it successful

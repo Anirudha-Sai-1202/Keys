@@ -310,31 +310,25 @@ export const useAuthStore = create((set, get) => ({
 	},
 
 	/**
-	 * Enhanced logout with SSO support
+	 * SSO Logout - auth-server clears cookies
 	 */
 	logoutWithSSO: async () => {
 		set({ isLoading: true, error: null });
-		try {
-			// Logout from SSO server
-			await logoutSSO();
 
-			// Also logout from local backend if needed
-			try {
-				await axios.post(`${API_URL}/logout`);
-			} catch (error) {
-				console.log('Local logout failed (non-critical):', error);
-			}
+		console.log('🚪 Logging out via auth-server...');
 
-			set({
-				user: null,
-				isAuthenticated: false,
-				error: null,
-				isLoading: false,
-			});
+		// Auth-server clears all cookies
+		await logoutSSO();
 
-			handleSuccess("Logged out successfully");
-		} catch (error) {
-			// Even if logout fails on server, clear local state
-		}
+		// Clear local state
+		set({
+			user: null,
+			isAuthenticated: false,
+			error: null,
+			isLoading: false,
+		});
+
+		// Redirect to login
+		window.location.href = '/login';
 	},
 }));

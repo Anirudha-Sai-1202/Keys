@@ -83,35 +83,37 @@ export const checkSSOAuth = async (cookies) => {
  * @returns {Promise<{token: string, user: object}>}
  */
 export const exchangeGoogleTokenForSSO = async (googleToken, origin) => {
-    const ssoServerUrl = "http://localhost:2999";
+    const ssoServerUrl = config.auth.ssoServerUrl;  // Use config, not hardcoded localhost!
 
     if (!ssoServerUrl) {
-        throw new Error('SSO server URL not configured 3');
+        throw new Error('SSO server URL not configured');
     }
 
     try {
+        console.log(`Exchanging Google token with SSO server at ${ssoServerUrl}/auth/google`);
         const response = await axios.post(
             `${ssoServerUrl}/auth/google`,
             {
                 token: googleToken,
-                app: config.auth.appName
+                origin: origin
             },
             {
                 headers: {
                     'Content-Type': 'application/json',
-                    'Origin': origin,
-                    'x-app-name': config.auth.appName
+                    'x-app-name': config.auth.appName,
                 },
-                timeout: 10000
+                withCredentials: true,
             }
         );
 
-        return response.data;
+        // Return both data and headers so we can forward Set-Cookie
+        return {
+            data: response.data,
+            headers: response.headers
+        };
     } catch (error) {
-        if (error.response) {
-            throw new Error(error.response.data.error || 'SSO authentication failed');
-        }
-        throw error;
+        console.error('Error exchanging Google token with SSO server:', error.response?.data || error.message);
+        throw new Error(error.response?.data?.message || 'Failed to exchange Google token with SSO server');
     }
 };
 
