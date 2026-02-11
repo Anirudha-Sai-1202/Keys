@@ -194,34 +194,66 @@ export const useAuthStore = create((set, get) => ({
 	 */
 	loginWithSSO: async (googleToken) => {
 		set({ isLoading: true, error: null });
-
 		try {
-			console.log('🔐 SSO Login: Exchanging Google token with SSO server...');
+			console.log('🔐 SSO Login: Exchanging Google token...');
 
-			const result = await loginWithSSOGoogle(googleToken);
+			// Step 1: Send Google token to backend which exchanges with auth-server
+			const response = await axios.post(`${API_URL}/sso/google`,
+				{ token: googleToken },
+				{ withCredentials: true }
+			);
 
-			if (result.success && result.user) {
-				// SSO server sets httpOnly cookies (userToken, user)
-				// No need to manually save tokens to localStorage
+			if (!response.data.success) {
+				throw new Error(response.data.message || 'SSO authentication failed');
+			}
 
+			console.log('✅ SSO token exchanged, fetching user data...');
+
+			// Step 2: Now fetch full user data from our backend using the cookie
+			const userResponse = await axios.get(`${API_URL}/check-auth`, {
+				withCredentials: true
+			});
+
+			if (userResponse.data.success && userResponse.data.user) {
+				// Successfully got user data
 				set({
-					user: result.user,
+					user: userResponse.data.user,
 					isAuthenticated: true,
+					error: null,
 					isLoading: false,
-					error: null
 				});
 
-				console.log('✅ SSO Login successful:', result.user);
-				handleSuccess("Logged in successfully with SSO!");
-				return result;
-			} else {
-				throw new Error('SSO login failed');
+				console.log('✅ User data fetched successfully:', userResponse.data.user);
+				return userResponse.data.user;
 			}
+
+			throw new Error('Failed to fetch user data after SSO login');
 		} catch (error) {
 			console.error('❌ SSO Login error:', error);
-			const errorMessage = handleError(error);
-			set({ error: errorMessage, isLoading: false, isAuthenticated: false });
-			throw error;
+
+			// Handle different error scenarios with specific messages
+			let errorMessage = "Authentication failed";
+
+			if (error.response?.status === 401) {
+				// User not found in database
+				errorMessage = "Access Denied: This application is only for registered faculty members.";
+			} else if (error.response?.status === 403) {
+				// Invalid credentials or college email required
+				errorMessage = "Login failed. Please use your college email (@vnrvjiet.in only)";
+			} else if (error.response?.data?.message) {
+				errorMessage = error.response.data.message;
+			} else if (error.message) {
+				errorMessage = error.message;
+			}
+
+			set({
+				error: errorMessage,
+				isLoading: false,
+				isAuthenticated: false,
+				user: null,
+			});
+
+			throw new Error(errorMessage);
 		}
 	},
 

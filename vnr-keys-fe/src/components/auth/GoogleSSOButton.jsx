@@ -14,22 +14,24 @@ const GoogleSSOButton = () => {
     const handleSuccess = async (credentialResponse) => {
         setIsLoading(true);
         try {
-            console.log("🔐 Google SSO Success - exchanging token...");
+            console.log("🔐 Google SSO Success - logging in...");
 
             // Extract the Google ID token
             const googleToken = credentialResponse.credential;
 
-            // Send to SSO server via backend
+            // Call loginWithSSO which handles everything
             await loginWithSSO(googleToken);
 
-            toast.success("Successfully logged in with SSO!");
+            // Show success message
+            toast.success("Successfully logged in!");
 
-            // Get route and do full page reload to ensure cookies are loaded
+            // Navigate using React Router (NO page reload)
             const route = getRoleBasedRoute();
-            window.location.href = route;
+            navigate(route, { replace: true });
         } catch (error) {
             console.error("SSO login error:", error);
-            toast.error(error.message || "SSO login failed");
+            // Error message is already set in authStore and loginWithSSO throws it
+            toast.error(error.message || "Authentication failed");
             setIsLoading(false);
         }
     };
@@ -41,27 +43,27 @@ const GoogleSSOButton = () => {
 
     return (
         <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-            <div className="w-full">
-                {isLoading ? (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-blue-300 rounded-lg bg-blue-50"
-                    >
-                        <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin"></div>
-                        <span className="text-blue-700 font-medium">Logging in with SSO...</span>
-                    </motion.div>
-                ) : (
+            <div className="w-full flex flex-col items-center gap-4">
+                {/* Google SSO Button Container with Google's styles */}
+                <div style={{ position: 'relative', justifyItems: 'center', width: '100%' }}>
                     <GoogleLogin
                         onSuccess={handleSuccess}
                         onError={handleError}
-                        useOneTap={false}
+                        text="continue_with"
                         theme="outline"
                         size="large"
-                        text="continue_with"
                         width="100%"
                         logo_alignment="left"
+                        useOneTap={false}
+                        disabled={isLoading}
                     />
+                </div>
+
+                {isLoading && (
+                    <div className="flex items-center gap-2 text-gray-400">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                        <span className="text-sm">Authenticating...</span>
+                    </div>
                 )}
             </div>
         </GoogleOAuthProvider>

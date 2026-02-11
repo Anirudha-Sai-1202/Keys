@@ -108,9 +108,13 @@ export const checkHybridAuth = async () => {
  * @returns {Promise<{success: boolean}>}
  */
 export const logoutSSO = async () => {
-    // Always call production auth-server for logout
-    const ssoServerUrl = 'https://authv2.vjstartup.com';
+    // Use config-based auth-server URL
+    const ssoServerUrl = config.sso.serverUrl;
 
+    if (!ssoServerUrl) {
+        console.warn('SSO server URL not configured');
+        return { success: false };
+    }
     try {
         // Direct POST to auth-server logout endpoint
         const response = await axios.post(

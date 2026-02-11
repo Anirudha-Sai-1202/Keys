@@ -2,8 +2,9 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import axios from 'axios';
 import socketService from '../services/socketService.js';
+import { config } from '../utils/config.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL_PRO || 'http://localhost:6203/api';
+const API_BASE_URL = config.api.authUrl;
 
 // Configure axios for notifications to use cookies like the auth store
 axios.defaults.withCredentials = true;
@@ -22,7 +23,7 @@ const useNotificationStore = create(
       setNotifications: (notifications) => {
         const unreadCount = notifications.filter(n => !n.read).length;
         set({
-          notifications, 
+          notifications,
           unreadCount,
           lastFetch: new Date().toISOString()
         });
@@ -64,11 +65,11 @@ const useNotificationStore = create(
       // Mark notification as read
       markAsRead: async (notificationId) => {
         const { notifications, setNotifications } = get();
-        
+
         try {
           console.log('Marking notification as read:', notificationId);
           console.log('API URL:', `${API_BASE_URL}/notifications/${notificationId}/read`);
-          
+
           const response = await axios.patch(`${API_BASE_URL}/notifications/${notificationId}/read`);
           console.log('Mark as read response:', response.data);
 
@@ -88,11 +89,11 @@ const useNotificationStore = create(
       // Mark notification as unread
       markAsUnread: async (notificationId) => {
         const { notifications, setNotifications } = get();
-        
+
         try {
           console.log('Marking notification as unread:', notificationId);
           console.log('API URL:', `${API_BASE_URL}/notifications/${notificationId}/unread`);
-          
+
           const response = await axios.patch(`${API_BASE_URL}/notifications/${notificationId}/unread`);
           console.log('Mark as unread response:', response.data);
 
@@ -112,7 +113,7 @@ const useNotificationStore = create(
       // Mark all notifications as read
       markAllAsRead: async () => {
         const { notifications, setNotifications } = get();
-        
+
         try {
           await axios.patch(`${API_BASE_URL}/notifications/mark-all-read`);
 
@@ -149,11 +150,11 @@ const useNotificationStore = create(
 
       // Clear all notifications
       clearNotifications: () => {
-        set({ 
-          notifications: [], 
-          unreadCount: 0, 
+        set({
+          notifications: [],
+          unreadCount: 0,
           error: null,
-          lastFetch: null 
+          lastFetch: null
         });
       },
 
@@ -179,12 +180,12 @@ const useNotificationStore = create(
       initializeSocket: () => {
         try {
           socketService.connect();
-          
+
           // Listen for new notifications
           socketService.on('notification', (notificationData) => {
             console.log('📢 New notification received:', notificationData);
             const { addNotification } = get();
-            
+
             // Add the new notification to the store
             const notification = {
               _id: notificationData.id,
@@ -195,7 +196,7 @@ const useNotificationStore = create(
               type: notificationData.type || 'general',
               priority: notificationData.priority || 'medium'
             };
-            
+
             addNotification(notification);
           });
 

@@ -43,7 +43,7 @@ export const verifyToken = async (req, res, next) => {
 
 				if (!user) {
 					console.log('❌ User not found in database:', decoded.email);
-					return res.status(401).json({ success: false, message: "User not found" });
+					return res.status(403).json({ success: false, message: "Access Denied: This application is only for registered faculty members. Please contact admin to get registered." });
 				}
 
 				req.userId = user._id.toString();
